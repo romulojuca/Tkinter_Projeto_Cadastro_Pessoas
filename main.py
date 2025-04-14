@@ -52,7 +52,7 @@ class Application():
         # Botão Alterar
         self.bt_limpar = Button(self.frame_1, text='Alterar')
         self.bt_limpar.place(relx=0.65, rely=0.1, relwidth=0.1, relheight=0.15)
-        # Botão Apagar
+        # Botão Apagarr
         self.bt_limpar = Button(self.frame_1, text='Apagar')
         self.bt_limpar.place(relx=0.753, rely=0.1,
                              relwidth=0.1, relheight=0.15)
