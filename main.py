@@ -11,18 +11,43 @@ from reportlab.platypus import SimpleDocTemplate, Image
 
 root = Tk()  # cria a janela do programa
 
+
 class Relatorios():
     def printCliente(self):
-        #chamar o browser
+        # chamar o browser
         webbrowser.open("cliente.pdf")
+
     def gerarRelatorio(self):
         self.c = canvas.Canvas("cliente.pdf")
-        #criar uma variavel para cada entry que vai vim pro relatorio
-        self.codRelatorio = self.codigo_entry.get()
+        # criar uma variavel para cada entry que vai vim pro relatorio
+        self.codigoRelatorio = self.codigo_entry.get()
         self.nomeRelatorio = self.nome_entry.get()
         self.telefoneRelatorio = self.telefone_entry.get()
         self.cidadeRelatorio = self.cidade_entry.get()
-        
+        # fonte do relatorio
+        self.c.setFont("Helvetica-Bold", 24)
+        # define largura x e y e passa o que vai ser escrito no pdf
+        self.c.drawString(200, 790, 'Ficha do Cliente')
+        # define posicao e escrito tambem
+        self.c.setFont("Helvetica-Bold", 18)
+        self.c.drawString(50, 700, 'Código: ')
+        self.c.drawString(50, 670, 'Nome: ')
+        self.c.drawString(50, 630, 'Telefone: ')
+        self.c.drawString(50, 600, 'Cidade: ')
+        # define a posicao e joga os valores:
+        self.c.setFont("Helvetica", 18)
+        self.c.drawString(150, 700, self.codigoRelatorio)
+        self.c.drawString(150, 670, self.nomeRelatorio)
+        self.c.drawString(150, 630, self.telefoneRelatorio)
+        self.c.drawString(150, 600, self.cidadeRelatorio)
+        # fill é se vai preencher o fundo F= nao
+        self.c.rect(20, 590, 530, 240, fill=False,
+                    stroke=True)
+
+        # chamar o pdf e salvar a baixo
+        self.c.showPage()
+        self.c.save()
+        self.printCliente()
 
 
 class Funcs():
@@ -83,7 +108,7 @@ class Funcs():
         self.conecta_bd()
         # pegando os dados do Banco de DADOS
         lista = self.cursor.execute(
-            """ SELECT cod, nome_cliente, telefone, 
+            """ SELECT cod, nome_cliente, telefone,
             cidade FROM projetoclientes ORDER BY nome_cliente ASC;  """)
         for i in lista:
             self.listaCliente.insert("", END, values=i)
@@ -124,23 +149,26 @@ class Funcs():
         self.select_lista()
         self.limpar_tela()
 
-    def Menu(self):
-        menubar = Menu(self.root)
-        self.root.config(menu=menubar)
-        # criando as variaveis para cada menu bar que for colocar
-        filemenu1 = Menu(menubar)
-        filemenu2 = Menu(menubar)
+    def busca_cliente(self):
+        self.conecta_bd()
+        self.listaCliente.delete(*self.listaCliente.get_children())
+        # insere a % no nome, pois o sistema usa ela para buscar
+        self.nome_entry.insert(END, '%')
+        nome = self.nome_entry.get()
+        # da um execute e passa o nome das tabelas
+        self.cursor.execute(
+            """ SELECT cod, nome_cliente, telefone,
+                cidade FROM projetoclientes WHERE nome_cliente LIKE '%s' ORDER BY nome_cliente ASC """ % nome
+        )
+        # fetchall recolhe as informações do BD e tras em tuplos
+        buscanomeCliente = self.cursor.fetchall()
+        for i in buscanomeCliente:
+            self.listaCliente.insert("", END, values=i)
+        self.limpar_tela()
+        self.desconecta_bd()
 
-        def Quit(): self.root.destroy()
-        # aqui diz que opções vai estar dentro de filemenu
-        menubar.add_cascade(label="Opções", menu=filemenu1)
-        menubar.add_cascade(label='Sobre', menu=filemenu2)
-        # comand é pra ir adicioanndo as opções dentro do menu
-        filemenu1.add_command(label="Sair", command=Quit)
-        filemenu1.add_command(label="Limpa Cliente", command=self.limpar_tela)
 
-
-class Application(Funcs):
+class Application(Funcs, Relatorios):
     def __init__(self):
         self.root = root  # faz uma equivalencia porque o root nao ta dentro da class
         self.tela()  # inicializa a def tela
@@ -188,7 +216,7 @@ class Application(Funcs):
                              relwidth=0.1, relheight=0.15)
         # Botão Buscar
         self.bt_buscar = Button(self.frame_1, text='Buscar', bd=3,
-                                bg='white', fg='black', font=('', 9, 'bold'))
+                                bg='white', fg='black', font=('', 9, 'bold'), command=self.busca_cliente)
         self.bt_buscar.place(relx=0.353, rely=0.1,
                              relwidth=0.1, relheight=0.15)
         # Botão Novo
@@ -263,6 +291,23 @@ class Application(Funcs):
                                relheight=0.85, relwidth=0.03)  # posiciona ela
         # fazer interação com a lista
         self.listaCliente.bind("<Double-1>", self.onDoubleClick)
+
+    def Menu(self):
+        menubar = Menu(self.root)
+        self.root.config(menu=menubar)
+        # criando as variaveis para cada menu bar que for colocar
+        filemenu1 = Menu(menubar)
+        filemenu2 = Menu(menubar)
+
+        def Quit(): self.root.destroy()
+        # aqui diz que opções vai estar dentro de filemenu
+        menubar.add_cascade(label="Opções", menu=filemenu1)
+        menubar.add_cascade(label='Relatorio', menu=filemenu2)
+        # comand é pra ir adicioanndo as opções dentro do menu
+        filemenu1.add_command(label="Sair", command=Quit)
+        filemenu1.add_command(label="Limpa Cliente", command=self.limpar_tela)
+        filemenu2.add_command(label="Gerar Relatório",
+                              command=self.gerarRelatorio)
 
 
 Application()  # chama a class
